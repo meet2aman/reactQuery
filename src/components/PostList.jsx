@@ -8,10 +8,12 @@ import { Checkbox, List, ListItem } from "@mui/joy";
 import Done from "@mui/icons-material/Done";
 import Snackbar from "@mui/joy/Snackbar";
 import PlaylistAddCheckCircleRoundedIcon from "@mui/icons-material/PlaylistAddCheckCircleRounded";
+import { Delete } from "@mui/icons-material";
 
 const PostList = () => {
   const [value, setValue] = React.useState([]);
   const [open, setOpen] = React.useState(false);
+  const [page, setPage] = React.useState(1);
   const queryClient = useQueryClient();
   const {
     data: postData,
@@ -19,12 +21,13 @@ const PostList = () => {
     error,
     isError,
   } = useQuery({
-    queryKey: ["posts"],
-    queryFn: fetchPosts,
+    queryKey: ["posts", { page }],
+    queryFn: () => fetchPosts(page),
   });
   const { data: tagsData } = useQuery({
     queryKey: ["tags"],
     queryFn: fetchTags,
+    staleTime: Infinity,
     onError: () => {
       setOpen(true);
     },
@@ -49,7 +52,6 @@ const PostList = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["posts"],
-        exact: true,
       });
     },
     onError: () => {
@@ -68,11 +70,15 @@ const PostList = () => {
     setValue("");
   };
 
+  const handleDelete = (id) => {
+      
+  };
+
   return (
     <div className="mt-10">
       <Snackbar
         variant="soft"
-        color="outlined"
+        color="success"
         size="md"
         open={open}
         onClose={() => setOpen(false)}
@@ -184,22 +190,48 @@ const PostList = () => {
               POST
             </button>
           </form>
-          {postData?.data?.map((post) => (
+          {postData?.data?.data?.map((post) => (
             <div
-              className="text-white flex items-center justify-start bg-neutral-700/40 gap-3 my-4 px-4 py-2 rounded-md"
+              className="text-white flex items-center justify-between bg-neutral-700/40 gap-3 my-4 px-4 py-2 rounded-md"
               key={post.id}
             >
-              {post?.title}
-              {post?.tags.map((tag) => (
-                <span
-                  className="text-white text-sm bg-slate-700  px-3 py-1 rounded-md"
-                  key={tag}
-                >
-                  {tag}
-                </span>
-              ))}
+              <div className="gap-3 flex">
+                {post?.title}
+                {post?.tags.map((tag) => (
+                  <span
+                    className="text-white text-sm bg-slate-700  px-3 py-1 rounded-md"
+                    key={tag}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <button onClick={handleDelete(post.id)}>
+                <Delete className="text-pink-500" />
+              </button>
             </div>
           ))}
+          {postData.data && (
+            <div className="flex p-4 gap-10 justify-center items-center">
+              <button
+                className="bg-neutral-700 px-3 py-1 rounded-md text-white cursor-pointer"
+                onClick={() => setPage((oldPage) => Math.max(oldPage - 1, 0))}
+                disabled={!postData?.data?.prev}
+              >
+                Previous
+              </button>
+              <p className="bg-blue-500/60 rounded-md px-2 py-1 text-white">
+                {page}
+              </p>
+              <button
+                className="bg-neutral-700 px-3 py-1 text-white rounded-md cursor-pointer"
+                onClick={() => setPage((oldPage) => oldPage + 1)}
+                disabled={!postData?.data?.next}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </>
       )}
       {isError && (
